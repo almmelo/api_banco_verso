@@ -48,7 +48,7 @@ public class Cliente extends PanacheEntityBase {
         return email;
     }
 
-    public void setEmail(String cpf) {
+    public void setEmail(String email) {
         this.email= email;
     }
 
