@@ -3,6 +3,7 @@ package br.com.banco.verso.resource;
 import br.com.banco.verso.dto.ClienteRequest;
 import br.com.banco.verso.dto.ClienteResponse;
 import br.com.banco.verso.model.Cliente;
+import br.com.banco.verso.model.UserRole;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -94,6 +95,60 @@ public class ClienteResource {
 
         return Response.ok(response).build();
     }
+
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Transactional
+    public Response criarCliente(ClienteRequest request) {
+
+        // Validações básicas
+        if (request.getNome() == null || request.getNome().isBlank() ||
+                request.getEmail() == null || request.getEmail().isBlank() ||
+                request.getCpf() == null || request.getCpf().isBlank() ||
+                request.getSenha() == null || request.getSenha().isBlank()) {
+
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Todos os campos são obrigatórios: nome, email, cpf, senha")
+                    .build();
+        }
+
+        // Verifica duplicidade de CPF
+        if (Cliente.find("cpf", request.getCpf()).firstResult() != null) {
+            return Response.status(Response.Status.CONFLICT)
+                    .entity("Já existe um cliente cadastrado com este CPF")
+                    .build();
+        }
+
+        // Verifica duplicidade de email
+        if (Cliente.find("email", request.getEmail()).firstResult() != null) {
+            return Response.status(Response.Status.CONFLICT)
+                    .entity("Já existe um cliente cadastrado com este email")
+                    .build();
+        }
+
+        // Cria novo cliente
+        Cliente cliente = new Cliente();
+        cliente.setNome(request.getNome());
+        cliente.setCpf(request.getCpf());
+        cliente.setEmail(request.getEmail());
+        cliente.setRole(UserRole.CLIENTE); //Padrao
+
+        // Hash da senha
+        String senhaHash = BcryptUtil.bcryptHash(request.getSenha());
+        cliente.setSenha(senhaHash);
+
+        cliente.persist();
+
+        ClienteResponse response = new ClienteResponse(
+                cliente.id,
+                cliente.getNome(),
+                cliente.getEmail()
+        );
+
+        return Response.status(Response.Status.CREATED).entity(response).build();
+    }
+
 
 
 
